@@ -1,0 +1,28 @@
+{
+  "public/images/lantern_icon_withline_homepage.png": {
+    "file": "assets/lantern_icon_withline_homepage-n_9mDRAh.png",
+    "src": "public/images/lantern_icon_withline_homepage.png"
+  },
+  "resources/css/style.css": {
+    "file": "assets/style-B42gudVe.css",
+    "src": "resources/css/style.css",
+    "isEntry": true
+  },
+  "resources/js/app.js": {
+    "file": "assets/app-CxbjHqa3.js",
+    "name": "app",
+    "src": "resources/js/app.js",
+    "isEntry": true,
+    "css": [
+      "assets/app-BQCsPas2.css"
+    ],
+    "assets": [
+      "assets/user-avatar-32-DmcaJ-Cb.png",
+      "assets/lantern_icon_withline_homepage-n_9mDRAh.png"
+    ]
+  },
+  "resources/js/images/user-avatar-32.png": {
+    "file": "assets/user-avatar-32-DmcaJ-Cb.png",
+    "src": "resources/js/images/user-avatar-32.png"
+  }
+}
