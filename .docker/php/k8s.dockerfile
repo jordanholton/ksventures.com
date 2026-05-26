@@ -4,8 +4,6 @@ FROM ghcr.io/jordanholton/ksventures.com/ksventures-php-base-85:v1.0.0
 WORKDIR /tmp
 COPY .docker/php/scripts .tmp
 COPY .docker/php/scripts/database.sqlite /var/www/html/database/database.sqlite
-COPY .docker/php/scripts/manifest.json /var/www/public/build/
-COPY .docker/php/scripts/firebase_creds.json /var/www/html/storage/app/firebase/firebase_creds.json
 RUN rm -rf /home/www-data/startups && mv /tmp/.tmp/startups/ /home/www-data/
 
 RUN chmod 777 /tmp/.tmp/*
