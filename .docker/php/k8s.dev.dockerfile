@@ -1,4 +1,4 @@
-FROM registry.gitlab.com/lantern-i/lntrn.io/lntrn-php-base-85:v1.0.0
+FROM ghcr.io/jordanholton/ksventures.com/ksventures-php-base-85:v1.0.0
 
 # copy the setup scripts
 WORKDIR /tmp
@@ -9,25 +9,6 @@ COPY .docker/php/scripts/firebase_creds.json /var/www/html/storage/app/firebase/
 RUN rm -rf /home/www-data/startups && mv /tmp/.tmp/startups/ /home/www-data/
 
 RUN chmod 777 /tmp/.tmp/*
-
-# setup the os and php environments and clean up the setup scripts
-RUN /tmp/.tmp/php-apk.sh \
-  && /tmp/.tmp/php-ext.sh \
-  && /tmp/.tmp/php-conf.sh \
-  && /tmp/.tmp/php-fpm-conf.sh \
-  && /tmp/.tmp/php-fpm-opcache.sh \
-  && /tmp/.tmp/php-composer.sh \
-  && /tmp/.tmp/php-ldaps.sh \
-  && rm -rf /tmp/.tmp/
-
-# set permissions on the php folders to make sure the operating user can get to all the places
-RUN chown -R www-data:www-data /usr/local/etc/php-fpm.d/* && \
-    chown -R www-data:www-data /usr/local/etc/php/* && \
-    chown -R www-data:www-data /home/www-data/* && \
-    touch /usr/local/var/log/php-fpm.log && \
-    chown www-data:www-data /usr/local/var/log/php-fpm.log && \
-    chmod 777 /var/www/html/storage/app/firebase/firebase_creds.json && \
-    chown www-data:www-data /var/www/html/storage/app/firebase/firebase_creds.json
 
 # set the operating user for php
 USER www-data:www-data

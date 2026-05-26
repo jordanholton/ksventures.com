@@ -1,0 +1,214 @@
+name: KS Ventures CI/CD Pipeline
+
+permissions:
+  contents: write
+  packages: write
+  pull-requests: read
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+      - 'ksventures_Release_*'
+
+jobs:
+  tag-main-ksventures-com:
+    if: |
+      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'pull_request' && github.event.pull_request.merged == true && github.event.pull_request.base.ref == 'main')
+    runs-on: ubuntu-latest
+    environment: ksventures.com
+    outputs:
+      tag_created: ${{ steps.create_tag.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GH_PAT_TOKEN }}
+
+      - name: Tag on Merge for ksventures.com to Main
+        id: create_tag
+        run: |
+          export GITHUB_TAG_KSVENTURES_COM=$(date "+%Y.%m.%d.%H%M%S-main")
+          git config --global user.email "jordan@jordanholton.com"
+          git config --global user.name "Jordan Holton"
+          git tag $GITHUB_TAG_KSVENTURES_COM
+          git push origin $GITHUB_TAG_KSVENTURES_COM
+          echo "tag=$GITHUB_TAG_KSVENTURES_COM" >> $GITHUB_OUTPUT
+
+  tag-develop-ksventures-com:
+    if: |
+      (github.event_name == 'push' && github.ref == 'refs/heads/develop') ||
+      (github.event_name == 'pull_request' && github.event.pull_request.merged == true && github.event.pull_request.base.ref == 'develop')
+    runs-on: ubuntu-latest
+    environment: ksventures.com
+    outputs:
+      tag_created: ${{ steps.create_tag.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GH_PAT_TOKEN }}
+
+      - name: Tag on Merge for ksventures.com to Develop
+        id: create_tag
+        run: |
+          export GITHUB_TAG_KSVENTURES_COM=$(date "+%Y.%m.%d.%H%M%S-develop")
+          git config --global user.email "jordan@jordanholton.com"
+          git config --global user.name "Jordan Holton"
+          git tag $GITHUB_TAG_KSVENTURES_COM
+          git push origin $GITHUB_TAG_KSVENTURES_COM
+          echo "tag=$GITHUB_TAG_KSVENTURES_COM" >> $GITHUB_OUTPUT
+
+  tag-release-ksventures-com:
+    if: |
+      (github.event_name == 'push' && startsWith(github.ref, 'refs/heads/Release_')) ||
+      (github.event_name == 'pull_request' && github.event.pull_request.merged == true && startsWith(github.event.pull_request.base.ref, 'KSVENTURES_Release_'))
+    runs-on: ubuntu-latest
+    environment: ksventures.com
+    outputs:
+      tag_created: ${{ steps.create_tag.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GH_PAT_TOKEN }}
+
+      - name: Tag on Merge for ksventures.com to Release
+        id: create_tag
+        run: |
+          export GITHUB_TAG_KSVENTURES_COM=$(date "+%Y.%m.%d.%H%M%S-release")
+          git config --global user.email "jordan@jordanholton.com"
+          git config --global user.name "Jordan Holton"
+          git tag $GITHUB_TAG_KSVENTURES_COM
+          git push origin $GITHUB_TAG_KSVENTURES_COM
+          echo "tag=$GITHUB_TAG_KSVENTURES_COM" >> $GITHUB_OUTPUT
+
+  build-and-deploy-main:
+    needs: [tag-main-ksventures-com]
+    if: needs.tag-main-KSVENTURES-com.outputs.tag_created != ''
+    runs-on: ubuntu-latest
+    environment: ksventures.com
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.5'
+
+      - name: Install Composer Dependencies
+        run: composer install --no-dev --optimize-autoloader --no-interaction
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: 'npm'
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Use created tag
+        id: extract_tag
+        run: |
+          echo "tag=${{ needs.tag-main-ksventures-com.outputs.tag_created }}" >> $GITHUB_OUTPUT
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GH_PAT_TOKEN }}
+
+      - name: Docker Build and Push
+        run: |
+          # Install dependencies and build assets
+          npm install
+          npm run build
+
+          IMAGE_BASE="ghcr.io/${{ github.repository_owner }}/ksventures.com"
+          TAG="${{ steps.extract_tag.outputs.tag }}"
+
+          # Build images
+          docker build . -f .docker/nginx/k8s.dockerfile \
+            -t "$IMAGE_BASE/ksventures-nginx:$TAG" \
+            -t "$IMAGE_BASE/ksventures-nginx:latest"
+
+          docker build . -f .docker/php/k8s.dockerfile \
+            -t "$IMAGE_BASE/ksventures-php:$TAG" \
+            -t "$IMAGE_BASE/ksventures-php:latest"
+
+          # Push images
+          docker push "$IMAGE_BASE/ksventures-nginx:$TAG"
+          docker push "$IMAGE_BASE/ksventures-nginx:latest"
+
+          docker push "$IMAGE_BASE/ksventures-php:$TAG"
+          docker push "$IMAGE_BASE/ksventures-php:latest"
+
+  build-and-deploy-nashville:
+    needs: [tag-develop-ksventures-com]
+    if: needs.tag-develop-ksventures-com.outputs.tag_created != ''
+    runs-on: ubuntu-latest
+    environment: ksventures.com
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.5'
+
+      - name: Install Composer Dependencies
+        run: composer install --no-dev --optimize-autoloader --no-interaction
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: 'npm'
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Use created tag
+        id: extract_tag
+        run: |
+          echo "tag=${{ needs.tag-develop-ksventures-com.outputs.tag_created }}" >> $GITHUB_OUTPUT
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GH_PAT_TOKEN }}
+
+      - name: Docker Build and Push
+        run: |
+          # Install dependencies and build assets
+          npm install
+          npm run build
+
+          IMAGE_BASE="ghcr.io/${{ github.repository_owner }}/ksventures.com"
+          TAG="${{ steps.extract_tag.outputs.tag }}"
+
+          # Build images
+          docker build . -f .docker/nginx/k8s.dockerfile \
+            -t "$IMAGE_BASE/ksventures-nginx:$TAG" \
+            -t "$IMAGE_BASE/ksventures-nginx:latest"
+
+          docker build . -f .docker/php/k8s.dockerfile \
+            -t "$IMAGE_BASE/ksventures-php:$TAG" \
+            -t "$IMAGE_BASE/ksventures-php:latest"
+
+          # Push images
+          docker push "$IMAGE_BASE/ksventures-nginx:$TAG"
+          docker push "$IMAGE_BASE/ksventures-nginx:latest"
+
+          docker push "$IMAGE_BASE/ksventures-php:$TAG"
+          docker push "$IMAGE_BASE/ksventures-php:latest"
