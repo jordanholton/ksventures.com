@@ -1,4 +1,4 @@
-FROM ghcr.io/jordanholton/jordanholton.com/jordanholton-php-base-85:v1.0.0
+FROM ghcr.io/jordanholton/ksventures.com/ksventures-php-base-85:v1.0.0-amd64
 
 # copy the setup scripts
 WORKDIR /tmp
