@@ -1,6 +1,5 @@
 echo "Installing Xdebug extension..."
-pie install xdebug/xdebug
-docker-php-ext-enable xdebug
+pie install -j"${PIE_MAKE_JOBS:-2}" xdebug/xdebug
 
 echo "Configuring Xdebug 3..."
 echo "xdebug.mode=debug" >> /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini
