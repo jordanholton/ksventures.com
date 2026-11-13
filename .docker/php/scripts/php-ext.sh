@@ -1,15 +1,14 @@
+set -e
+
+# cap parallel compile jobs so low-memory builders don't OOM-kill cc1
+PIE_MAKE_JOBS="${PIE_MAKE_JOBS:-2}"
+
 echo "Installing mcrypt extension..."
-pie install pecl/mcrypt
-docker-php-ext-enable mcrypt
+pie install -j"${PIE_MAKE_JOBS}" pecl/mcrypt
 
 # Install php-redis via PIE
 echo "Installing redis extension..."
-pie install phpredis/phpredis
-docker-php-ext-enable redis
-
-# Install opcache (built-in extension)
-echo "Installing opcache..."
-docker-php-ext-install opcache
+pie install -j"${PIE_MAKE_JOBS}" phpredis/phpredis
 
 # Install the php extensions needed by the app
 echo "Installing core PHP extensions..."

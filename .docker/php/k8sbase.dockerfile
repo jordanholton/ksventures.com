@@ -1,4 +1,12 @@
-FROM php:8.5.1-fpm-alpine3.23
+FROM node:24.22.3-alpine3.24 AS node
+
+FROM php:8.5.12-fpm-alpine3.24
+
+# bring in nodejs and npm from the official node image (alpine's apk package lags behind)
+COPY --from=node /usr/local/bin/node /usr/local/bin/node
+COPY --from=node /usr/local/lib/node_modules /usr/local/lib/node_modules
+RUN ln -s /usr/local/lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm \
+  && ln -s /usr/local/lib/node_modules/npm/bin/npx-cli.js /usr/local/bin/npx
 
 # copy the setup scripts
 WORKDIR /tmp
@@ -14,7 +22,8 @@ RUN /tmp/.tmp/php-apk.sh \
   && /tmp/.tmp/php-fpm-opcache.sh \
   && /tmp/.tmp/php-composer.sh \
   && /tmp/.tmp/php-ldaps.sh \
-  && rm -rf /tmp/.tmp/
+  && rm -rf /tmp/.tmp/ \
+  && node --version && npm --version
 
 # set permissions on the php folders to make sure the operating user can get to all the places
 RUN chown -R www-data:www-data /usr/local/etc/php-fpm.d/* && \

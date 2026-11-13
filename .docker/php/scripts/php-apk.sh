@@ -11,9 +11,11 @@ apk add mysql-client \
         openldap-dev \
         git \
         procps \
-        npm \
+        libstdc++ \
+        libgcc \
         libmcrypt-dev \
         libmcrypt \
         libltdl \
+        libtool \
         libpng-dev \
         $PHPIZE_DEPS #comes from the php:7.x-fpm-alpine image

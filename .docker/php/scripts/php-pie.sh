@@ -1,10 +1,11 @@
 echo "Installing PIE (PHP Installer for Extensions)..."
 
-# Download PIE PHAR from latest release
-PIE_URL="https://github.com/php/pie/releases/latest/download/pie.phar"
+# Download a pinned PIE PHAR release
+PIE_VERSION="${PIE_VERSION:-1.5.3}"
+PIE_URL="https://github.com/php/pie/releases/download/${PIE_VERSION}/pie.phar"
 
-echo "Downloading PIE (latest stable)..."
-curl -L "${PIE_URL}" -o /tmp/pie.phar
+echo "Downloading PIE ${PIE_VERSION}..."
+curl -fL "${PIE_URL}" -o /tmp/pie.phar
 
 # Verify the download worked
 if [ ! -f /tmp/pie.phar ]; then
